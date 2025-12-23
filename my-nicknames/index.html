@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可愛遊戲暱稱產生器 - 邏輯優化版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #fce7f3 0%, #e0e7ff 100%);
+            font-family: 'Zen Maru Gothic', sans-serif;
+        }
+        .bouncy {
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .nickname-card {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .nickname-card:hover {
+            transform: scale(1.02);
+        }
+        /* 提醒區塊樣式 */
+        #alert-box {
+            transition: all 0.3s ease;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        #alert-box.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border-4 border-pink-200 relative overflow-hidden">
+        <!-- 背景裝飾 -->
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-100 rounded-full opacity-50"></div>
+        <div class="absolute -bottom-10 -left-10 w-24 h-24 bg-pink-100 rounded-full opacity-50"></div>
+
+        <div class="relative z-10 text-center">
+            <h1 class="text-4xl font-bold text-pink-500 mb-2 bouncy">暱稱小工廠</h1>
+            <p class="text-gray-500 mb-8 text-sm text-center">點擊下方按鈕，召喚你的專屬萌名 ✨</p>
+
+            <!-- 顯示區域 -->
+            <div id="display-container" 
+                 onclick="copyMainNickname()"
+                 title="點擊直接複製暱稱"
+                 class="nickname-card bg-pink-50 border-2 border-dashed border-pink-300 rounded-2xl p-10 mb-8 min-h-[160px] flex flex-col items-center justify-center cursor-pointer hover:bg-pink-100/50 active:scale-95 transition-all">
+                <div id="nickname-text" class="text-3xl font-bold text-indigo-600 mb-2 text-center">準備好了嗎？</div>
+                <div id="nickname-sub" class="text-sm text-pink-400">按下按鈕開始隨機</div>
+            </div>
+
+            <!-- 操作按鈕 -->
+            <button onclick="generateNickname()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-6 rounded-2xl text-xl shadow-lg transform active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span>🪄</span>
+                <span>隨機產生一個！</span>
+            </button>
+
+            <!-- 提醒區塊 -->
+            <div id="alert-box" class="mt-2 px-4 py-2 rounded-xl text-sm font-medium">
+                <!-- 提醒文字會出現在這裡 -->
+            </div>
+
+            <!-- 歷史記錄區域 -->
+            <div class="mt-6 text-left">
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="text-sm font-semibold text-gray-400 flex items-baseline gap-1">
+                        <span>📜</span> 
+                        <span>最近產生的</span>
+                        <span class="text-[10px] text-pink-400 font-normal ml-0.5 whitespace-nowrap">（點選下方暱稱可直接複製）</span>
+                    </h3>
+                    <button onclick="resetApp()" class="text-xs text-pink-400 hover:text-pink-600 font-bold border border-pink-200 px-2 py-1 rounded-lg hover:bg-pink-50 transition-colors">
+                        清空重置
+                    </button>
+                </div>
+                
+                <!-- 限制說明文字 -->
+                <p class="text-[11px] text-pink-300 mb-3 italic text-center">
+                    * 最多只幫你存 9 個，多的會自動被新的取代。
+                </p>
+
+                <div id="history" class="flex flex-wrap gap-2 min-h-[32px] justify-center">
+                    <!-- 歷史暱稱會出現在這裡 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const adjectives = [
+            "軟綿綿的", "氣噗噗的", "愛睏的", "閃亮亮的", "呆萌的",
+            "糊塗的", "胖嘟嘟的", "甜滋滋的", "水汪汪的", "毛茸茸的",
+            "Ｑ彈的", "傲嬌的", "害羞的", "貪吃的", "夢幻的",
+            "綿綿糖", "布丁醬", "厚奶茶", "小草莓", "星空色", 
+            "櫻花祭", "薄荷綠", "蜂蜜漬", "鮮奶油", "起司塊",
+            "中二的", "傲氣的", "路過的", "優雅的", "超香的",
+            "亮晶晶的", "酥脆的", "黏答答的", "涼颼颼的", "暖呼呼的",
+            "笨拙的", "靈巧的", "佛系的", "熱血的", "憂鬱的",
+            "神祕的", "透明的", "彩色般的", "金燦燦的", "銀閃閃的",
+            "害羞的", "奔跑中的", "睡過頭的", "迷路的", "發光中的",
+            "腹黑的", "正義的", "孤獨的", "活潑的", "安靜的",
+            "軟Ｑ的", "冰淇淋般的", "像極了愛情的", "超大顆的", "細長的",
+            "臭臉的", "微笑的", "驚呆的", "爆走的", "優哉的",
+            "沒睡飽的", "吃太飽的", "心跳跳的", "臉紅紅的", "圓溜溜的",
+            "滑順的", "清爽的", "醇厚的", "辛辣的", "酸溜溜的",
+            "天藍色的", "嫩草綠的", "玫瑰色的", "丁香紫的", "焦糖色的",
+            "躲起來的", "跳躍中的", "翻滾中的", "倒立中的", "飛行中的",
+            "勇敢的", "無畏的", "奇蹟般的", "永恆的", "短暫的"
+        ];
+
+        const nouns = [
+            "小貓咪", "兔兔", "倉鼠", "小熊糖", "泡芙球",
+            "幽靈子", "史萊姆", "恐龍仔", "糰子", "麻糬",
+            "星星", "雲朵", "水豚君", "精靈", "企鵝",
+            "柯基", "柴犬", "小怪獸", "章魚燒", "飯糰",
+            "獨角獸", "餅乾", "小松鼠", "海豹", "狐狸",
+            "肉球", "尾巴", "甜甜圈", "野草莓", "草泥馬",
+            "羊駝", "水母", "螢火蟲", "貓頭鷹", "哈士奇",
+            "法式吐司", "馬卡龍", "珍珠奶茶", "小籠包", "鯛魚燒",
+            "向日葵", "仙人掌", "風鈴", "紙飛機", "熱氣球",
+            "小星球", "流星", "黑洞", "銀河", "彩虹",
+            "雪人", "雪花", "小雨滴", "微風", "雷電",
+            "勇者", "魔法師", "召喚獸", "守護靈", "冒險者",
+            "布丁", "大福", "銅鑼燒", "舒芙蕾", "千層派",
+            "西瓜", "蜜柑", "水蜜桃", "小葡萄", "藍莓",
+            "潛水艇", "太空船", "時光機", "任意門", "竹蜻蜓",
+            "音符", "鋼琴鍵", "調色盤", "畫筆", "相機",
+            "貝殼", "珊瑚", "海星", "小丑魚", "鯨魚",
+            "機器人", "齒輪", "小螺絲", "電路板", "光纖"
+        ];
+
+        const decorations = ["✨", "🌙", "🎀", "⭐", "🍭", "🐾", "🍓", "🧁", "🌈", "🎨", "🍀", "💎", "🍡", "🍦", "🛸", "🧸"];
+
+        const feedbackMessages = [
+            "這名字聽起來超可愛！", "萌到心都要融化了～", "感覺很有大將之風！", "這名字絕對會大紅大紫！",
+            "聽起來就像是個傳說！", "這個名字非常有個性哦！", "簡直是為了你量身打造！", "萌度破表啦！✨",
+            "這名字太有靈氣了！", "感覺是個高手的名字！", "這名字自帶閃光效果！", "好想馬上用這個名字！",
+            "這聽起來就是個SSR角色！", "完全是電競大神級別！", "這個名字充滿了魔法感～", "你是不是偷偷請教過命理師？",
+            "這個組合我給100分！", "聽起來就很會玩遊戲的感覺！", "走在路上的回頭率一定很高！", "這個名字有種神祕的魅力...",
+            "天啊！這名字太療癒了吧～", "聽起來就像是個貴族！", "非常有藝術氣息的名字呢！", "這名字自帶背景音樂！"
+        ];
+
+        const HISTORY_LIMIT = 9;
+        let currentNickname = ""; // 當前主畫面顯示的暱稱
+
+        function generateNickname() {
+            // 1. 如果主畫面已經有暱稱，先將「舊的」送到歷史紀錄
+            if (currentNickname !== "") {
+                addToHistory(currentNickname);
+            }
+
+            // 2. 產生「新的」暱稱
+            const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+            const noun = nouns[Math.floor(Math.random() * nouns.length)];
+            const deco = decorations[Math.floor(Math.random() * decorations.length)];
+            const msg = feedbackMessages[Math.floor(Math.random() * feedbackMessages.length)];
+            
+            const newNickname = `${adj}${noun}${deco}`;
+            
+            // 3. 更新主畫面
+            const textEl = document.getElementById('nickname-text');
+            const subEl = document.getElementById('nickname-sub');
+            
+            textEl.innerText = newNickname;
+            subEl.innerText = msg;
+            
+            // 4. 更新當前狀態變數
+            currentNickname = newNickname;
+            
+            // 5. 視覺反饋
+            const container = document.getElementById('display-container');
+            container.classList.add('bg-yellow-50');
+            setTimeout(() => container.classList.remove('bg-yellow-50'), 300);
+            
+            // 每次產生新暱稱時，如果是正常的產生，則確保隱藏之前的「上限提醒」
+            // 只有在 addToHistory 裡真的超過 9 個時才會再顯示
+            if (document.getElementById('history').children.length < HISTORY_LIMIT) {
+                hideAlert();
+            }
+        }
+
+        function copyMainNickname() {
+            if (!currentNickname) return;
+            copyText(currentNickname);
+        }
+
+        function addToHistory(name) {
+            const historyContainer = document.getElementById('history');
+            
+            // 檢查是否即將超過上限
+            if (historyContainer.children.length >= HISTORY_LIMIT) {
+                showAlert("⚠️ 記得複製自己喜歡的暱稱，不然超過9個它會不見哦！", "warning");
+                
+                while (historyContainer.children.length >= HISTORY_LIMIT) {
+                    historyContainer.removeChild(historyContainer.lastChild);
+                }
+            }
+            
+            const btn = document.createElement('button');
+            btn.className = "text-xs bg-gray-100 text-gray-500 px-3 py-1.5 rounded-full animate-fade-in hover:bg-pink-100 hover:text-pink-600 transition-all cursor-pointer border border-transparent active:scale-95";
+            btn.innerText = name;
+            btn.title = "點擊複製";
+            
+            btn.onclick = function(e) {
+                e.stopPropagation();
+                copyText(name);
+            };
+            
+            historyContainer.prepend(btn);
+        }
+
+        function copyText(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showAlert(`✅ 已複製: ${text}`, "success");
+            } catch (err) {
+                console.error('複製失敗', err);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.innerText = message;
+            alertBox.classList.add('show');
+            
+            if (type === "warning") {
+                alertBox.className = "mt-2 px-4 py-2 rounded-xl text-[11px] font-bold show bg-orange-50 text-orange-600 border border-orange-100";
+            } else {
+                alertBox.className = "mt-2 px-4 py-2 rounded-xl text-xs font-medium show bg-green-50 text-green-600";
+                if (window.alertTimeout) clearTimeout(window.alertTimeout);
+                window.alertTimeout = setTimeout(hideAlert, 2000);
+            }
+        }
+
+        function hideAlert() {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.classList.remove('show');
+        }
+
+        function resetApp() {
+            currentNickname = "";
+            document.getElementById('nickname-text').innerText = "準備好了嗎？";
+            document.getElementById('nickname-sub').innerText = "按下按鈕開始隨機";
+            document.getElementById('history').innerHTML = "";
+            
+            const container = document.getElementById('display-container');
+            container.classList.add('border-pink-500');
+            setTimeout(() => container.classList.remove('border-pink-500'), 500);
+            
+            showAlert("✨ 紀錄已清空，重新開始！", "success");
+        }
+    </script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+
+</body>
+</html>
