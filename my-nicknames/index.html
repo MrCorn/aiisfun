@@ -40,7 +40,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4 flex-col">
 
     <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border-4 border-pink-200 relative overflow-hidden">
         <!-- 背景裝飾 -->
@@ -77,7 +77,7 @@
                     <h3 class="text-sm font-semibold text-gray-400 flex items-baseline gap-1">
                         <span>📜</span> 
                         <span>最近產生的</span>
-                        <span class="text-[10px] text-pink-400 font-normal ml-0.5 whitespace-nowrap">（點選下方暱稱可直接複製）</span>
+                        <span class="text-[10px] text-pink-400 font-normal ml-0.5 whitespace-nowrap">（點選暱稱可直接複製）</span>
                     </h3>
                     <button onclick="resetApp()" class="text-xs text-pink-400 hover:text-pink-600 font-bold border border-pink-200 px-2 py-1 rounded-lg hover:bg-pink-50 transition-colors">
                         清空重置
@@ -95,6 +95,22 @@
             </div>
         </div>
     </div>
+
+    <!-- 頁尾 Logo 與 玉米老師製作 -->
+    <footer class="mt-8 flex flex-row items-center justify-center gap-6 relative z-10">
+        <a href="https://aiisfun.ai" target="_blank" class="hover:opacity-80 transition-opacity">
+            <img src="https://aiisfun.ai/wp-content/uploads/2025/08/AIisFun_LOGO_02_with-words-200.png" 
+                 alt="AIisFun LOGO" 
+                 class="h-7 w-auto">
+        </a>
+        <div class="h-4 w-px bg-pink-200"></div>
+        <div class="flex items-center gap-1 text-xs font-medium">
+            <a href="https://corn.is/fb" target="_blank" class="text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1">
+                <span>🌽</span> 玉米老師
+            </a>
+            <span class="text-indigo-600 font-normal ml-1">製作</span>
+        </div>
+    </footer>
 
     <script>
         const adjectives = [
@@ -151,15 +167,13 @@
         ];
 
         const HISTORY_LIMIT = 9;
-        let currentNickname = ""; // 當前主畫面顯示的暱稱
+        let currentNickname = "";
 
         function generateNickname() {
-            // 1. 如果主畫面已經有暱稱，先將「舊的」送到歷史紀錄
             if (currentNickname !== "") {
                 addToHistory(currentNickname);
             }
 
-            // 2. 產生「新的」暱稱
             const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
             const noun = nouns[Math.floor(Math.random() * nouns.length)];
             const deco = decorations[Math.floor(Math.random() * decorations.length)];
@@ -167,23 +181,18 @@
             
             const newNickname = `${adj}${noun}${deco}`;
             
-            // 3. 更新主畫面
             const textEl = document.getElementById('nickname-text');
             const subEl = document.getElementById('nickname-sub');
             
             textEl.innerText = newNickname;
             subEl.innerText = msg;
             
-            // 4. 更新當前狀態變數
             currentNickname = newNickname;
             
-            // 5. 視覺反饋
             const container = document.getElementById('display-container');
             container.classList.add('bg-yellow-50');
             setTimeout(() => container.classList.remove('bg-yellow-50'), 300);
             
-            // 每次產生新暱稱時，如果是正常的產生，則確保隱藏之前的「上限提醒」
-            // 只有在 addToHistory 裡真的超過 9 個時才會再顯示
             if (document.getElementById('history').children.length < HISTORY_LIMIT) {
                 hideAlert();
             }
@@ -197,7 +206,6 @@
         function addToHistory(name) {
             const historyContainer = document.getElementById('history');
             
-            // 檢查是否即將超過上限
             if (historyContainer.children.length >= HISTORY_LIMIT) {
                 showAlert("⚠️ 記得複製自己喜歡的暱稱，不然超過9個它會不見哦！", "warning");
                 
