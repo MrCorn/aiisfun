@@ -10,6 +10,8 @@
         body {
             background: linear-gradient(135deg, #fce7f3 0%, #e0e7ff 100%);
             font-family: 'Zen Maru Gothic', sans-serif;
+            /* 防止行動端點擊時出現藍色框框 */
+            -webkit-tap-highlight-color: transparent;
         }
         .bouncy {
             animation: bounce 2s infinite;
@@ -67,7 +69,7 @@
             </button>
 
             <!-- 提醒區塊 -->
-            <div id="alert-box" class="mt-2 px-4 py-2 rounded-xl text-sm font-medium">
+            <div id="alert-box" class="mt-2 px-4 py-2 rounded-xl text-sm font-medium text-center">
                 <!-- 提醒文字會出現在這裡 -->
             </div>
 
@@ -227,17 +229,33 @@
             historyContainer.prepend(btn);
         }
 
+        // 行動端優化版複製邏輯
         function copyText(text) {
             const textArea = document.createElement("textarea");
             textArea.value = text;
+            
+            // 確保在行動裝置上不會閃退或滾動
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            textArea.readOnly = true; // 防止手機彈出鍵盤
+            
             document.body.appendChild(textArea);
+            
+            // 選取文字
+            textArea.focus();
             textArea.select();
+            textArea.setSelectionRange(0, 99999); // 針對 iOS 的特殊處理
+            
             try {
-                document.execCommand('copy');
-                showAlert(`✅ 已複製: ${text}`, "success");
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showAlert(`✅ 已複製: ${text}`, "success");
+                }
             } catch (err) {
                 console.error('複製失敗', err);
             }
+            
             document.body.removeChild(textArea);
         }
 
